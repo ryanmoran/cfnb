@@ -20,3 +20,4 @@ This is a spike on a tool to repackage Cloud Native Buildpacks as Cloud Foundry 
 1. Does this work if the buildpack is specified directly via `cf push myapp -b <buildpack>`?
 1. What does support for sidecar buildpacks look like?
 1. How can this function in multi-buildpack support? What happens if it is intermingled with v2 and v3 buildpacks?
+1. How can we support `$VCAP_SERVICES`?
