@@ -31,7 +31,8 @@ function main() {
         ;;
 
       *)
-        util::print::error "unknown argument \"${1}\""
+        echo "unknown argument \"${1}\""
+        exit 1
     esac
   done
 
