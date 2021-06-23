@@ -175,7 +175,8 @@ EOF
 }
 
 function phase::finalize() {
-  local deps_dir index profile_dir
+  local working_dir deps_dir index profile_dir
+  working_dir="${1}"
   deps_dir="${3}"
   index="${4}"
   profile_dir="${5}"
@@ -204,6 +205,12 @@ EOF
 default_process_types:
   web: ${cmd}
 EOF
+
+  # If there is a Procfile, we need to remove it so that the procfile buildpack
+  # will work and the built-in Procfile support will not be triggered.
+  if [[ -e "${working_dir}/Procfile" ]]; then
+    rm "${working_dir}/Procfile"
+  fi
 
   util::environment::launch::set "${deps_dir}" "${profile_dir}"
 }
@@ -305,28 +312,31 @@ function util::platform::environment::initialize() {
   IFS=$'\n' read -r -d '' -a variables < <(
     env \
       | grep -v '^CF_' \
-      | grep -v '^VCAP_' \
-      | grep -v '^USER=' \
-      | grep -v '^PWD=' \
       | grep -v '^HOME=' \
-      | grep -v '^PATH=' \
-      | grep -v '^SHLVL=' \
-      | grep -v '^_=' \
       | grep -v '^LANG=' \
-      | grep -v '^MEMORY_LIMIT='
+      | grep -v '^MEMORY_LIMIT=' \
+      | grep -v '^PATH=' \
+      | grep -v '^PWD=' \
+      | grep -v '^SHLVL=' \
+      | grep -v '^USER=' \
+      | grep -v '^VCAP_' \
+      | grep -v '^_=' \
+    || true
 
     printf '\0'
   )
 
-  for variable in "${variables[@]}"; do
-    IFS=$'=' read -r -d '' -a parts < <( printf "%s\0" "${variable}" )
+  if [[ "${#variables[@]}" != "0" ]]; then
+    for variable in "${variables[@]}"; do
+      IFS=$'=' read -r -d '' -a parts < <( printf "%s\0" "${variable}" )
 
-    local key value
-    key="${parts[0]}"
-    value="$(util::join "=" "${parts[@]:1:${#parts[@]}}")"
+      local key value
+      key="${parts[0]}"
+      value="$(util::join "=" "${parts[@]:1:${#parts[@]}}")"
 
-    printf "%s" "${value}" > "${dir}/env/${key}"
-  done
+      printf "%s" "${value}" > "${dir}/env/${key}"
+    done
+  fi
 }
 
 function util::join() {

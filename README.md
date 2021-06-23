@@ -16,7 +16,6 @@ This is a spike on a tool to repackage Cloud Native Buildpacks as Cloud Foundry 
 1. Push your app.
 
 ## Questions for further investigation
-1. How does this play with Procfile?
 1. How can we support `$VCAP_SERVICES`?
 1. What is `override.yml` and how does it play with this?
 1. What is the contract for `config.yml`? This supports `name` and `version`,
