@@ -25,6 +25,12 @@ function main() {
         shift 2
         ;;
 
+      --help|-h)
+        shift 1
+        usage
+        exit 0
+        ;;
+
       "")
         # skip if the argument is empty
         shift 1
@@ -103,6 +109,20 @@ function main() {
   popd > /dev/null || true
 
   rm -rf "${working_dir}"
+}
+
+function usage() {
+  cat <<-USAGE
+package.sh --buildpack <path> --lifecycle <path> --output <path>
+
+Packages a Cloud Native Buildpack to run in Cloud Foundry
+
+OPTIONS
+  --buildpack  path to the Cloud Native Buildpack .cnb file
+  --help -h    prints the command usage
+  --lifecycle  path to the buildpack lifecycle tarball
+  --output     path to the location to output the Cloud Foundry buildpack
+USAGE
 }
 
 function util::tar() {
