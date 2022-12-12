@@ -74,23 +74,23 @@ function main() {
       done
     popd > /dev/null
 
-    util::tar xzf ./buildpack.cnb /index.json
+    util::tar xzf ./buildpack.cnb index.json
 
     local manifest
     manifest="blobs/sha256/$(jq -r '.manifests[0].digest' index.json | sed 's/sha256://')"
     rm index.json
 
-    util::tar xzf ./buildpack.cnb "/${manifest}"
+    util::tar xzf ./buildpack.cnb "${manifest}"
 
     local config
     config="blobs/sha256/$(jq -r '.config.digest' "${manifest}" | sed 's/sha256://')"
-    util::tar xzf ./buildpack.cnb "/${config}"
+    util::tar xzf ./buildpack.cnb "${config}"
 
     local main_id
     main_id="$(jq -r '.config.Labels."io.buildpacks.buildpackage.metadata"' "${config}" | jq -r .id)"
 
     for layer in $(jq -r '.layers[].digest' "${manifest}" | sed 's/sha256://'); do
-      util::tar xzf ./buildpack.cnb "/blobs/sha256/${layer}"
+      util::tar xzf ./buildpack.cnb "blobs/sha256/${layer}"
       util::tar xf "blobs/sha256/${layer}"
 
       if [[ "${main_id}" == "$(util::tar xOf "blobs/sha256/${layer}" ./*buildpack.toml | yj -tj | jq -r .buildpack.id)" ]]; then
