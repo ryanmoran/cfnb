@@ -38,7 +38,7 @@ function phase::detect() {
 
   util::platform::environment::initialize "${platform_dir}"
 
-  CNB_STACK_ID=org.cloudfoundry.stacks.cflinuxfs3 \
+  CNB_STACK_ID=io.buildpacks.stacks.bionic \
     "${BUILDPACK_DIR}/cnb/lifecycle/detector" \
       -app "${working_dir}" \
       -buildpacks "${BUILDPACK_DIR}/cnb/buildpacks" \
@@ -51,13 +51,13 @@ function phase::detect() {
 }
 
 function phase::supply() {
-  local working_dir deps_dir index platform_dir
+  local working_dir randomized_deps_dir index platform_dir
   working_dir="${1}"
-  deps_dir="${3}"
+  randomized_deps_dir="${3}"
   index="${4}"
   platform_dir="/tmp/platform"
 
-  util::environment::staging::set "${deps_dir}"
+  util::environment::staging::set "${randomized_deps_dir}"
   util::platform::environment::initialize "${platform_dir}"
 
   # If the /tmp/group.toml file is not present, the buildpack skipped
@@ -68,13 +68,13 @@ function phase::supply() {
 
   local name version
   name="$(
-    grep '\[buildpack\]' -A 4 < "${BUILDPACK_DIR}/buildpack.toml" \
+    grep '\[buildpack\]' -A 10 < "${BUILDPACK_DIR}/buildpack.toml" \
       | grep name \
       | sed 's/  name = \"//' \
       | sed 's/\"$//'
   )"
   version="$(
-    grep '\[buildpack\]' -A 4 < "${BUILDPACK_DIR}/buildpack.toml" \
+    grep '\[buildpack\]' -A 10 < "${BUILDPACK_DIR}/buildpack.toml" \
       | grep version \
       | sed 's/  version = \"//' \
       | sed 's/\"$//'
@@ -84,11 +84,12 @@ function phase::supply() {
 
   # Link deps directory to /home/vcap/deps because the given directory is a
   # random path that does not persist into the droplet.
-  ln -sf "${deps_dir}" "${HOME}/deps"
+  local deps_dir
   deps_dir="${HOME}/deps"
+  mkdir "${deps_dir}"
 
   # Put all layers in this buildpack's dependency directory.
-  mkdir "${deps_dir}/${index}/layers"
+  mkdir -p "${deps_dir}/${index}/layers"
 
   # Write out the buildpack configuration to indicate to the platform the name
   # and version of the buildpack.
@@ -99,7 +100,7 @@ version: ${version}
 magic_string: true # this is a "magic string" used by the profile.d script at launch to help stitch together all of the v3 buildpacks
 EOF
 
-  CNB_STACK_ID=org.cloudfoundry.stacks.cflinuxfs3 \
+  CNB_STACK_ID=io.buildpacks.stacks.bionic \
     "${BUILDPACK_DIR}/cnb/lifecycle/builder" \
        -app "${working_dir}" \
        -buildpacks "${BUILDPACK_DIR}/cnb/buildpacks" \
@@ -156,9 +157,8 @@ EOF
 
   chmod +x "${profile_dir}/launch.sh"
 
-  # Remove the deps directory link, restoring the /home/vcap directory to its
-  # original state.
-  rm "${deps_dir}"
+  # Move deps directory back to its original location.
+  mv "${deps_dir}/${index}" "${randomized_deps_dir}"
 
   # Remove other shared lifecycle files.
   if [[ -e /tmp/group.toml ]]; then
